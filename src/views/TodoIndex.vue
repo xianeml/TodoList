@@ -81,7 +81,7 @@
           <td
             class="w-1/12 text-center text-red-500 hover:text-red-700 cursor-pointer"
           >
-            <a @click="deleteTodo(todo.id)">삭제</a>
+            <a @click="deleteTodo(todo)">삭제</a>
           </td>
         </tr>
       </tbody>
@@ -117,7 +117,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { getTodoList, createTodo, modifyTodo, deleteTodo } from '@/api/todo';
+
 export default {
   name: 'TodoIndex',
   data() {
@@ -146,15 +147,7 @@ export default {
       if (this.done === true || this.done === false) {
         getTodosParams.done = this.done;
       }
-      const todosData = await axios.get(
-        'http://localhost:3000/todo?_sort=done,id&_order=asc,desc',
-        {
-          params: getTodosParams,
-          meta: {
-            useResponseAll: true,
-          },
-        }
-      );
+      const todosData = await getTodoList(getTodosParams);
       this.todos = todosData.data;
       this.totalCount = todosData.headers['x-total-count'];
       this.totalPage = Math.ceil(this.totalCount / this.perPage);
@@ -181,24 +174,24 @@ export default {
         alert('60자 제한');
         return;
       }
-      const newTodoObj = {
+      const newTodo = {
         text: this.newTodoText,
         date: this.getFormatDate(new Date()),
         done: false,
       };
-      await axios.post('http://localhost:3000/todo', newTodoObj);
+      await createTodo(newTodo);
       this.newTodoText = '';
       this.viewFilter = 'allTodos';
       this.setViewFilter();
     },
-    async deleteTodo(id) {
-      await axios.delete(`http://localhost:3000/todo/${id}`);
+    async deleteTodo(todo) {
+      await deleteTodo(todo.id);
       this.getTodos();
     },
     async doneTodo(todo) {
-      const done = !todo.done;
-      await axios.patch(`http://localhost:3000/todo/${todo.id}`, {
-        done: done,
+      await modifyTodo({
+        id: todo.id,
+        done: !todo.done,
       });
       this.getTodos();
     },
