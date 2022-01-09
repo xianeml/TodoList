@@ -126,6 +126,7 @@
 
 <script>
 import { getTodoList, createTodo, modifyTodo, deleteTodo } from '@/api/todo';
+import { getFormatDate } from '@/utils/common';
 
 export default {
   name: 'TodoIndex',
@@ -176,7 +177,7 @@ export default {
       }
       const newTodo = {
         text: this.form.newTodoText,
-        date: this.getFormatDate(new Date()),
+        date: getFormatDate(new Date()),
         done: false,
       };
       await createTodo(newTodo);
@@ -202,14 +203,6 @@ export default {
       this.form.newTodoText = '';
       this.form.searchText = '';
       this.chagePage(1);
-    },
-    getFormatDate(date) {
-      const year = date.getFullYear();
-      let month = 1 + date.getMonth();
-      month = month >= 10 ? month : '0' + month;
-      let day = date.getDate();
-      day = day >= 10 ? day : '0' + day;
-      return year + '-' + month + '-' + day;
     },
   },
 };
