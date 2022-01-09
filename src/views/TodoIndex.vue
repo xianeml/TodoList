@@ -60,8 +60,7 @@
         <th>날짜</th>
         <th>삭제</th>
       </thead>
-      <tbody>
-        <!-- TODO: 데이터 없는 경우 표시영역 추가-->
+      <tbody v-if="grid.totalCount > 0">
         <tr v-for="todo in grid.todos" :key="todo.id">
           <td class="w-20 text-center">
             <input
@@ -87,8 +86,15 @@
           </td>
         </tr>
       </tbody>
+      <tbody v-else>
+        <tr class="text-gray-500">
+          <td colspan="5" class="text-center p-2">
+            등록된 할 일이 없습니다. 할 일을 새로 추가하세요.
+          </td>
+        </tr>
+      </tbody>
     </table>
-    <div class="flex items-center justify-center">
+    <div v-if="grid.totalCount > 0" class="flex items-center justify-center">
       <a class="border cursor-pointer" @click="chagePage(1)">처음</a>
       <a
         v-for="page in grid.totalPage"
