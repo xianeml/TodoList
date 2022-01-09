@@ -81,7 +81,7 @@
           <td
             class="w-1/12 text-center text-red-500 hover:text-red-700 cursor-pointer"
           >
-            <a @click="deleteTodo(todo.id)">삭제</a>
+            <a @click="deleteTodo(todo)">삭제</a>
           </td>
         </tr>
       </tbody>
@@ -117,8 +117,7 @@
 </template>
 
 <script>
-import axios from 'axios';
-import { getTodoList } from '@/api/todo';
+import { getTodoList, createTodo, modifyTodo, deleteTodo } from '@/api/todo';
 
 export default {
   name: 'TodoIndex',
@@ -175,24 +174,24 @@ export default {
         alert('60자 제한');
         return;
       }
-      const newTodoObj = {
+      const newTodo = {
         text: this.newTodoText,
         date: this.getFormatDate(new Date()),
         done: false,
       };
-      await axios.post('/api/todo', newTodoObj);
+      await createTodo(newTodo);
       this.newTodoText = '';
       this.viewFilter = 'allTodos';
       this.setViewFilter();
     },
-    async deleteTodo(id) {
-      await axios.delete(`/api/todo/${id}`);
+    async deleteTodo(todo) {
+      await deleteTodo(todo.id);
       this.getTodos();
     },
     async doneTodo(todo) {
-      const done = !todo.done;
-      await axios.patch(`/api/todo/${todo.id}`, {
-        done: done,
+      await modifyTodo({
+        id: todo.id,
+        done: !todo.done,
       });
       this.getTodos();
     },

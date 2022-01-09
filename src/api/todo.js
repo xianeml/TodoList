@@ -10,3 +10,26 @@ export const getTodoList = params => {
     },
   });
 };
+
+export const createTodo = data => {
+  return request({
+    url: '/api/todo',
+    method: 'POST',
+    data,
+  });
+};
+
+export const modifyTodo = data => {
+  return request({
+    url: `/api/todo/${data.id}`,
+    method: 'PATCH',
+    data,
+  });
+};
+
+export const deleteTodo = id => {
+  return request({
+    url: `/api/todo/${id}`,
+    method: 'DELETE',
+  });
+};
