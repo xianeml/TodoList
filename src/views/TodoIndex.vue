@@ -1,6 +1,6 @@
 <template>
   <div class="grid my-20">
-    <h1 class="text-2xl text-center">Todo List</h1>
+    <h1 class="text-2xl text-center">{{ $const.code.appTitle }}</h1>
     <div class="text-center mx-auto my-16">
       <input
         v-model="form.newTodoText"
@@ -144,7 +144,7 @@ export default {
         totalPage: 10,
       },
       filter: {
-        view: 'all',
+        view: this.$const.code.filter.view.all,
       },
     };
   },
@@ -158,8 +158,11 @@ export default {
         _limit: this.grid.perPage,
         q: this.form.searchText,
       };
-      if (this.filter.view !== 'all') {
-        params.done = this.filter.view === 'complete' ? true : false;
+      if (this.filter.view !== this.$const.code.filter.view.all) {
+        params.done =
+          this.filter.view === this.$const.code.filter.view.complete
+            ? true
+            : false;
       }
       const todos = await getTodoList(params);
       this.grid.todos = todos.data;
@@ -173,7 +176,7 @@ export default {
     async addTodo() {
       if (this.form.newTodoText === '') return;
       if (this.form.newTodoText.length > 60) {
-        return alert('60자 이내로 입력하세요.');
+        return alert(this.$const.msg.validate.textLength);
       }
       const newTodo = {
         text: this.form.newTodoText,
@@ -199,7 +202,7 @@ export default {
       this.chagePage(1);
     },
     refreshList() {
-      this.filter.view = 'all';
+      this.filter.view = this.$const.code.filter.view.all;
       this.form.newTodoText = '';
       this.form.searchText = '';
       this.chagePage(1);
