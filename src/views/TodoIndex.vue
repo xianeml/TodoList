@@ -3,7 +3,7 @@
     <h1 class="text-2xl text-center">Todo List</h1>
     <div class="text-center mx-auto my-16">
       <input
-        v-model="newTodoText"
+        v-model="form.newTodoText"
         type="text"
         class="w-96 border-b-2 py-2 px-3 mr-2 hover:border-blue-400 focus:border-blue-400 focus:shadow-sm"
         placeholder="할 일을 입력하세요"
@@ -19,29 +19,30 @@
     <div class="flex w-9/12 mx-auto mb-4">
       <div class="flex-1 text-right">
         <select
-          v-model="perPage"
+          v-model="grid.perPage"
           class="w-28 border-b-2  py-2 px-3 rounded mr-2 hover:border-blue-400"
-          @change="setCurPage(1)"
+          @change="chagePage(1)"
         >
-          <option value="5">5개보기</option>
-          <option value="10" selected>10개보기</option>
-          <option value="20">20개보기</option>
-          <option value="30">30개보기</option>
+          <option :value="5">5개보기</option>
+          <option :value="10" selected>10개보기</option>
+          <option :value="20">20개보기</option>
+          <option :value="30">30개보기</option>
         </select>
         <select
-          v-model="viewFilter"
+          v-model="filter.view"
           class="w-36 border-b-2 py-2 px-3 rounded hover:border-blue-400"
-          @change="setViewFilter"
+          @change="chagePage(1)"
         >
-          <option value="allTodos" selected>전체보기</option>
+          <option value="all" selected>전체보기</option>
           <option value="complete">완료된 항목</option>
           <option value="progress">진행중인 항목</option>
         </select>
+        <!-- TODO: 아이콘으로 변 경-->
         <button
           class="border-2 border-blue-400 py-1 px-3 rounded text-blue-400 ml-2 hover:border-blue-500 hover:text-blue-500"
-          @click="showList"
+          @click="refreshList"
         >
-          목록보기
+          필터초기화
         </button>
       </div>
     </div>
@@ -53,14 +54,14 @@
           할 일
           <span
             class="flex-none text-sm mr-4 bg-blue-400 text-white rounded-full ml-2 p-1"
-            >{{ totalCount }}</span
+            >{{ grid.totalCount }}</span
           >
         </th>
         <th>날짜</th>
         <th>삭제</th>
       </thead>
-      <tbody>
-        <tr v-for="todo in todos" :key="todo.id">
+      <tbody v-if="grid.totalCount > 0">
+        <tr v-for="todo in grid.todos" :key="todo.id">
           <td class="w-20 text-center">
             <input
               type="checkbox"
@@ -85,23 +86,30 @@
           </td>
         </tr>
       </tbody>
+      <tbody v-else>
+        <tr class="text-gray-500">
+          <td colspan="5" class="text-center p-2">
+            등록된 할 일이 없습니다. 할 일을 새로 추가하세요.
+          </td>
+        </tr>
+      </tbody>
     </table>
-    <div class="flex items-center justify-center">
-      <a class="border cursor-pointer" @click="setCurPage(1)">처음</a>
+    <div v-if="grid.totalCount > 0" class="flex items-center justify-center">
+      <a class="border cursor-pointer" @click="chagePage(1)">처음</a>
       <a
-        v-for="page in totalPage"
+        v-for="page in grid.totalPage"
         :key="page"
         class="mx-2 cursor-pointer"
-        :class="{ curPage: curPage === page }"
-        @click="setCurPage(page)"
+        :class="{ curPage: grid.curPage === page }"
+        @click="chagePage(page)"
       >
         {{ page }}</a
       >
-      <a class="border cursor-pointer">끝</a>
+      <a class="border cursor-pointer" @click="chagePage(grid.totalPage)">끝</a>
     </div>
     <div class="mx-auto">
       <input
-        v-model="searchTerm"
+        v-model="form.searchText"
         type="text"
         class="w-72 mt-12 border-b-2 py-2 px-3 mr-2 hover:border-blue-400 focus:border-blue-400 focus:shadow-sm"
         placeholder="검색어를 입력하세요"
@@ -118,20 +126,26 @@
 
 <script>
 import { getTodoList, createTodo, modifyTodo, deleteTodo } from '@/api/todo';
+import { getFormatDate } from '@/utils/common';
 
 export default {
   name: 'TodoIndex',
   data() {
     return {
-      todos: [],
-      newTodoText: '',
-      perPage: 10,
-      curPage: 1,
-      totalCount: 0,
-      totalPage: 10,
-      viewFilter: 'allTodos',
-      done: '',
-      searchTerm: '',
+      form: {
+        newTodoText: '',
+        searchText: '',
+      },
+      grid: {
+        todos: [],
+        curPage: 1,
+        perPage: 10,
+        totalCount: 0,
+        totalPage: 10,
+      },
+      filter: {
+        view: 'all',
+      },
     };
   },
   created() {
@@ -139,50 +153,35 @@ export default {
   },
   methods: {
     async getTodos() {
-      const getTodosParams = {
-        _page: this.curPage,
-        _limit: this.perPage,
-        q: this.searchTerm,
+      const params = {
+        _page: this.grid.curPage,
+        _limit: this.grid.perPage,
+        q: this.form.searchText,
       };
-      if (this.done === true || this.done === false) {
-        getTodosParams.done = this.done;
+      if (this.filter.view !== 'all') {
+        params.done = this.filter.view === 'complete' ? true : false;
       }
-      const todosData = await getTodoList(getTodosParams);
-      this.todos = todosData.data;
-      this.totalCount = todosData.headers['x-total-count'];
-      this.totalPage = Math.ceil(this.totalCount / this.perPage);
+      const todos = await getTodoList(params);
+      this.grid.todos = todos.data;
+      this.grid.totalCount = todos.headers['x-total-count'];
+      this.grid.totalPage = Math.ceil(this.grid.totalCount / this.grid.perPage);
     },
-    setCurPage(page) {
-      this.curPage = page;
+    chagePage(page) {
+      this.grid.curPage = page;
       this.getTodos();
     },
-    setViewFilter() {
-      if (this.viewFilter === 'complete') {
-        this.done = true;
-      } else if (this.viewFilter === 'progress') {
-        this.done = false;
-      } else if (this.viewFilter === 'allTodos') {
-        this.done = '';
-      }
-      this.setCurPage(1);
-    },
     async addTodo() {
-      if (this.newTodoText === '') {
-        return;
-      }
-      if (this.newTodoText.length > 60) {
-        alert('60자 제한');
-        return;
+      if (this.form.newTodoText === '') return;
+      if (this.form.newTodoText.length > 60) {
+        return alert('60자 이내로 입력하세요.');
       }
       const newTodo = {
-        text: this.newTodoText,
-        date: this.getFormatDate(new Date()),
+        text: this.form.newTodoText,
+        date: getFormatDate(new Date()),
         done: false,
       };
       await createTodo(newTodo);
-      this.newTodoText = '';
-      this.viewFilter = 'allTodos';
-      this.setViewFilter();
+      this.chagePage(1);
     },
     async deleteTodo(todo) {
       await deleteTodo(todo.id);
@@ -196,24 +195,14 @@ export default {
       this.getTodos();
     },
     searchTodo() {
-      if (this.searchTerm === '') {
-        return;
-      }
-      this.setCurPage(1);
+      if (this.form.searchText === '') return;
+      this.chagePage(1);
     },
-    showList() {
-      this.viewFilter = 'allTodos';
-      this.done = '';
-      this.searchTerm = '';
-      this.setCurPage(1);
-    },
-    getFormatDate(date) {
-      const year = date.getFullYear();
-      let month = 1 + date.getMonth();
-      month = month >= 10 ? month : '0' + month;
-      let day = date.getDate();
-      day = day >= 10 ? day : '0' + day;
-      return year + '-' + month + '-' + day;
+    refreshList() {
+      this.filter.view = 'all';
+      this.form.newTodoText = '';
+      this.form.searchText = '';
+      this.chagePage(1);
     },
   },
 };
